@@ -116,7 +116,9 @@ STATIC void ili9342c_ILI9342C_print(const mp_print_t *print, mp_obj_t self_in, m
 }
 
 STATIC void write_spi(mp_obj_base_t *spi_obj, const uint8_t *buf, int len) {
-	((mp_machine_spi_p_t *) spi_obj->type->protocol)->transfer(spi_obj, len, buf, NULL);
+	//((mp_machine_spi_p_t *) spi_obj->type->protocol)->transfer(spi_obj, len, buf, NULL);
+	mp_machine_spi_p_t *spi_p = (mp_machine_spi_p_t *) MP_OBJ_TYPE_GET_SLOT(spi_obj->type, protocol);
+	spi_p->transfer(spi_obj, len, buf, NULL);
 }
 
 STATIC void write_cmd(ili9342c_ILI9342C_obj_t *self, uint8_t cmd, const uint8_t *data, int len) {
@@ -488,8 +490,10 @@ STATIC mp_obj_t ili9342c_ILI9342C_draw(size_t n_args, const mp_obj_t *args) {
 
 			int16_t offset = index[ii] | (index[ii+1] << 8);
             int16_t length = font[offset++];
-            int16_t left = lround((font[offset++] - 0x52) * scale);
-            int16_t right = lround((font[offset++] - 0x52) * scale);
+            //int16_t left = lround((font[offset++] - 0x52) * scale);
+            //int16_t right = lround((font[offset++] - 0x52) * scale);
+            int16_t left = (font[offset++] - 0x52) * scale;
+            int16_t right = (font[offset++] - 0x52) * scale;
             int16_t width = right - left;
 
             if (length) {
@@ -501,8 +505,10 @@ STATIC mp_obj_t ili9342c_ILI9342C_draw(size_t n_args, const mp_obj_t *args) {
                         continue;
                     }
 
-                    int16_t vector_x = lround((font[offset++] - 0x52) * scale);
-                    int16_t vector_y = lround((font[offset++] - 0x52) * scale);
+                    //int16_t vector_x = lround((font[offset++] - 0x52) * scale);
+                    //int16_t vector_y = lround((font[offset++] - 0x52) * scale);
+                    int16_t vector_x = (font[offset++] - 0x52) * scale;
+                    int16_t vector_y = (font[offset++] - 0x52) * scale;
 
                     if (!i ||  penup) {
                         from_x = pos_x + vector_x - left;
@@ -1211,7 +1217,7 @@ STATIC mp_obj_t ili9342c_ILI9342C_jpg(size_t n_args, const mp_obj_t *args) {
 
     JRESULT res;                        // Result code of TJpgDec API
     JDEC jdec;                          // Decompression object
-    void *work = (void*)malloc(3100);   // Pointer to the work area
+    void *work = m_malloc(3100);   // Pointer to the work area
     IODEV devid;                        // User defined device identifier
     size_t bufsize;
 
@@ -1264,7 +1270,7 @@ STATIC mp_obj_t ili9342c_ILI9342C_jpg(size_t n_args, const mp_obj_t *args) {
 		}
 	    mp_close(devid.fp);
 	}
-	free(work);                 // Discard work area
+	m_free(work);                 // Discard work area
 	return mp_const_none;
 }
 
@@ -1306,13 +1312,22 @@ STATIC const mp_rom_map_elem_t ili9342c_ILI9342C_locals_dict_table[] = {
 STATIC MP_DEFINE_CONST_DICT(ili9342c_ILI9342C_locals_dict, ili9342c_ILI9342C_locals_dict_table);
 /* methods end */
 
-const mp_obj_type_t ili9342c_ILI9342C_type = {
-	{&mp_type_type},
-	.name		 = MP_QSTR_ILI9342C,
-	.print		 = ili9342c_ILI9342C_print,
-	.make_new	 = ili9342c_ILI9342C_make_new,
-	.locals_dict = (mp_obj_dict_t *) &ili9342c_ILI9342C_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+	ili9342c_ILI9342C_type,
+	MP_QSTR_ILI9342C,
+	MP_TYPE_FLAG_NONE,
+	print, ili9342c_ILI9342C_print,
+	make_new, ili9342c_ILI9342C_make_new,
+	locals_dict, &ili9342c_ILI9342C_locals_dict
+);
+
+//const mp_obj_type_t ili9342c_ILI9342C_type = {
+//	{&mp_type_type},
+//	.name		 = MP_QSTR_ILI9342C,
+//	.print		 = ili9342c_ILI9342C_print,
+//	.make_new	 = ili9342c_ILI9342C_make_new,
+//	.locals_dict = (mp_obj_dict_t *) &ili9342c_ILI9342C_locals_dict,
+//};
 
 mp_obj_t ili9342c_ILI9342C_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 	enum {
@@ -1411,4 +1426,4 @@ const mp_obj_module_t mp_module_ili9342c = {
 	.globals = (mp_obj_dict_t *) &mp_module_ili9342c_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_ili9342c, mp_module_ili9342c, MODULE_ILI9342C_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_ili9342c, mp_module_ili9342c);
